@@ -2,7 +2,10 @@
 // its very simple but power full for testing mainly
 package sterr
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Err is standard error with nesting capability
 type Err struct {
@@ -52,13 +55,7 @@ func (e *Err) Error() string {
 // check recursively. It ignores arguments and only compares messages
 func (e *Err) Is(err error) bool {
 	if val, ok := err.(*Err); ok && val.message == e.message {
-		if e.err == nil && val.err == nil {
-			return true
-		}
-
-		if e, ok := e.err.(*Err); ok {
-			return e.Is(val.err)
-		}
+		return errors.Is(e.err, val.err)
 	}
 
 	return false
