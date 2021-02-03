@@ -51,6 +51,15 @@ func (e *Err) Error() string {
 	return message + ": " + e.err.Error()
 }
 
+// SameSurface compares only first error, does not check recursively
+func (e *Err) SameSurface(err error) bool {
+	if val, ok := err.(*Err); ok && val.message == e.message {
+		return true
+	}
+
+	return false
+}
+
 // Is returns whether this Err is equal to other Err instance. It will
 // check recursively. It ignores arguments and only compares messages
 func (e *Err) Is(err error) bool {
