@@ -52,9 +52,11 @@ func (e *Err) Error() string {
 }
 
 // SameSurface compares only first error, does not check recursively
-//
-// will panic if e is nil
 func (e *Err) SameSurface(err error) bool {
+	if e == nil || err == nil {
+		return e == nil && err == nil
+	}
+
 	if val, ok := err.(*Err); ok && val.message == e.message {
 		return true
 	}
