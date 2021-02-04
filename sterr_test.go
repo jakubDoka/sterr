@@ -42,3 +42,14 @@ func TestIs(t *testing.T) {
 		})
 	}
 }
+
+func TestTrace(t *testing.T) {
+	res := "hello2\n\ta\n\tb\nhello\nend of trace: not an instance of Err or nil"
+
+	err := New("hello2").Wrap(WriteTrace(WriteTrace(New("hello"), "b"), "a"))
+
+	trc := ReadTrace(err)
+	if trc != res {
+		t.Errorf("%q != %q", trc, res)
+	}
+}

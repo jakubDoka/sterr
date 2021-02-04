@@ -11,6 +11,7 @@ import (
 type Err struct {
 	message string
 	args    []interface{}
+	trace   []string
 	err     error
 }
 
@@ -73,4 +74,39 @@ func (e Err) Is(err error) bool {
 	}
 
 	return false
+}
+
+// T does tha same thing as WriteTrace
+func T(err error, label string) error {
+	return WriteTrace(err, label)
+}
+
+// WriteTrace adds trace label to error is it is instance or Err
+func WriteTrace(err error, label string) error {
+	if val, ok := err.(Err); ok {
+		val.trace = append(val.trace, label)
+		return val
+	}
+
+	return err
+}
+
+// ReadTrace reads the error trace if error is instance of Err
+func ReadTrace(err error) (trace string) {
+	for {
+		val, ok := err.(Err)
+		if !ok {
+			break
+		}
+
+		for i := len(val.trace) - 1; i >= 0; i-- {
+			trace += "\t" + val.trace[i] + "\n"
+		}
+
+		trace += fmt.Sprintf(val.message, val.args...) + "\n"
+		err = val.err
+	}
+
+	trace += "end of trace: not an instance of Err or nil"
+	return
 }
