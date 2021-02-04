@@ -15,26 +15,25 @@ type Err struct {
 }
 
 // New returns error instance with given message
-func New(message string) *Err {
-	return &Err{message: message}
+func New(message string) Err {
+	return Err{message: message}
 }
 
 // Args sets error args that should be used when formatting, copy is returned
-func (e *Err) Args(args ...interface{}) *Err {
-	err := *e
-	err.args = args
-	return &err
+func (e Err) Args(args ...interface{}) Err {
+
+	e.args = args
+	return e
 }
 
 // Wrap wraps error into caller and returns copy or nil if err == nil
-func (e *Err) Wrap(err error) *Err {
+func (e Err) Wrap(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	er := *e
-	er.err = err
-	return &er
+	e.err = err
+	return e
 }
 
 //Unwrap unwraps the error if it is holding any
@@ -43,7 +42,7 @@ func (e *Err) Unwrap() error {
 }
 
 // Error performs error formating
-func (e *Err) Error() string {
+func (e Err) Error() string {
 	message := fmt.Sprintf(e.message, e.args...)
 	if e.err == nil {
 		return message
@@ -52,13 +51,9 @@ func (e *Err) Error() string {
 }
 
 // SameSurface compares only first error, does not check recursively
-func (e *Err) SameSurface(err error) bool {
-	if e == nil || err == nil {
-		return e == nil && err == nil
-	}
-
-	if val, ok := err.(*Err); ok && val.message == e.message {
-		return true
+func (e Err) SameSurface(err error) bool {
+	if val, ok := err.(*Err); ok {
+		return val.message == e.message
 	}
 
 	return false
@@ -68,7 +63,7 @@ func (e *Err) SameSurface(err error) bool {
 // check recursively. It ignores arguments and only compares messages.
 //
 // will panic if e is nil
-func (e *Err) Is(err error) bool {
+func (e Err) Is(err error) bool {
 	if val, ok := err.(*Err); ok && val.message == e.message {
 		return errors.Is(e.err, val.err)
 	}
