@@ -2,6 +2,8 @@ package sterr
 
 import (
 	"errors"
+	"fmt"
+	"runtime"
 	"testing"
 )
 
@@ -44,12 +46,21 @@ func TestIs(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
-	res := "hello2\n\ta\n\tb\nhello\nend of trace: not an instance of Err or nil"
-
-	err := New("hello2").Wrap(WriteTrace(WriteTrace(New("hello"), "b"), "a"))
+	err := New("hello2").Trace(1)
 
 	trc := ReadTrace(err)
-	if trc != res {
-		t.Errorf("%q != %q", trc, res)
+	if len(trc) != 1 {
+		t.Error(trc)
 	}
+
+}
+
+func Test(t *testing.T) {
+	test()
+	t.Fail()
+}
+
+func test() {
+	fmt.Println(runtime.Caller(0))
+	fmt.Println(runtime.Caller(1))
 }

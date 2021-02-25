@@ -5,14 +5,15 @@ package sterr
 import (
 	"errors"
 	"fmt"
+	"runtime"
 )
 
 // Err is standard error with nesting capability
 type Err struct {
-	message string
-	args    []interface{}
-	trace   []string
-	err     error
+	message, file, line string
+	args                []interface{}
+	trace               StackTrace
+	err                 error
 }
 
 // New returns error instance with given message
@@ -20,9 +21,15 @@ func New(message string) Err {
 	return Err{message: message}
 }
 
+// Trace builds a stacktrace for the error, length specifies length of stacktrace
+// from Trace call
+func (e Err) Trace(length int) Err {
+	e.trace = NStackTrace(length)
+	return e
+}
+
 // Args sets error args that should be used when formatting, copy is returned
 func (e Err) Args(args ...interface{}) Err {
-
 	e.args = args
 	return e
 }
@@ -76,37 +83,57 @@ func (e Err) Is(err error) bool {
 	return false
 }
 
-// T does tha same thing as WriteTrace
-func T(err error, label string) error {
-	return WriteTrace(err, label)
-}
-
-// WriteTrace adds trace label to error is it is instance or Err
-func WriteTrace(err error, label string) error {
+// ReadTrace retrieves trace from Err is given error is instance of it
+func ReadTrace(err error) StackTrace {
 	if val, ok := err.(Err); ok {
-		val.trace = append(val.trace, label)
-		return val
+		return val.trace
 	}
 
-	return err
+	return nil
 }
 
-// ReadTrace reads the error trace if error is instance of Err
-func ReadTrace(err error) (trace string) {
-	for {
-		val, ok := err.(Err)
+// StackTrace stores filenames and lines of stack trace
+type StackTrace []StackFrame
+
+// NStackTrace creates new stacktrace, giving info about length of stackframes
+func NStackTrace(length int) StackTrace {
+	l := length
+	if length == -1 {
+		l = 20
+	} else {
+		length += 2
+	}
+	t := make(StackTrace, 0, l)
+	for i := 2; i < length || length == -1; i++ {
+		var st StackFrame
+		var ok bool
+		_, st.Filename, st.Line, ok = runtime.Caller(i)
 		if !ok {
 			break
 		}
-
-		for i := len(val.trace) - 1; i >= 0; i-- {
-			trace += "\t" + val.trace[i] + "\n"
-		}
-
-		trace += fmt.Sprintf(val.message, val.args...) + "\n"
-		err = val.err
+		t = append(t, st)
 	}
 
-	trace += "end of trace: not an instance of Err or nil"
+	return t
+}
+
+func (s StackTrace) String() (res string) {
+	if len(s) == 0 {
+		return "no trace tracked"
+	}
+
+	for _, s := range s {
+		res += s.String()
+	}
 	return
+}
+
+// StackFrame is segment of stacktrace
+type StackFrame struct {
+	Filename string
+	Line     int
+}
+
+func (s StackFrame) String() string {
+	return fmt.Sprintf("%s:%d\n", s.Filename, s.Line)
 }
